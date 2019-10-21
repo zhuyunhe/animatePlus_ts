@@ -13,6 +13,6 @@ const getElements = (elements: any) => {
   if(!elements || elements.nodeType) {
     return [elements]
   }
-  Object.assign
+  // Object.assign
   return Array.from(typeof elements === 'string' ? document.querySelectorAll(elements) : elements) 
 }

@@ -119,10 +119,33 @@ const extractNumbers = (value: string) => {
 const sanitize = (values: any[]) => {
   return values.map((value) => {
     const _value = String(value);
-    return _value.startsWith('#') ? '' : _value;
+    // 如果是颜色，需要单独处理
+    return _value.startsWith('#') ? rgba(_value) : _value;
   })
 }
 
+const rgba = (hex: string) => {
+  const color = hex.slice(1);
+  const [r, g, b, a] = convert(color);
+  return `rgba(${r}, ${g}, ${b}, ${a/255})`;
+}
+
+const convert = (color:string) => 
+  hexPairs(color).map(string => parseInt(string, 16));
+
+const hexPairs = (color:string) => {
+  const split = color.split("");
+  const pairs = color.length < 5 
+    ? split.map(string => string + string)
+    : split.reduce((array:string[], string:string, index:number) => {
+      if (index % 2)
+        array.push(split[index - 1] + string);
+      return array;
+    }, []);
+    if (pairs.length < 4)
+      pairs.push("ff");
+    return pairs;
+}
 
 const addPropertyKeyframes = (property, values: any[]) => {
   const animatable: string[] = sanitize(values);

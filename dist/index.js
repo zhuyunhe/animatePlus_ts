@@ -53,7 +53,8 @@ var first = function (_a) {
 var easings = {
     "linear": function (progress) { return progress; },
     "in-cubic": function (progress) { return Math.pow(progress, 3); },
-    "in-quartic": function (progress) { return Math.pow(progress, 4); }
+    "in-quartic": function (progress) { return Math.pow(progress, 4); },
+    "in-quintic": function (progress) { return Math.pow(progress, 5); }
 };
 var getElements = function (elements) {
     if (Array.isArray(elements)) {
@@ -140,8 +141,30 @@ var extractNumbers = function (value) {
 var sanitize = function (values) {
     return values.map(function (value) {
         var _value = String(value);
-        return _value.startsWith('#') ? '' : _value;
+        // 如果是颜色，需要单独处理
+        return _value.startsWith('#') ? rgba(_value) : _value;
     });
+};
+var rgba = function (hex) {
+    var color = hex.slice(1);
+    var _a = convert(color), r = _a[0], g = _a[1], b = _a[2], a = _a[3];
+    return "rgba(" + r + ", " + g + ", " + b + ", " + a / 255 + ")";
+};
+var convert = function (color) {
+    return hexPairs(color).map(function (string) { return parseInt(string, 16); });
+};
+var hexPairs = function (color) {
+    var split = color.split("");
+    var pairs = color.length < 5
+        ? split.map(function (string) { return string + string; })
+        : split.reduce(function (array, string, index) {
+            if (index % 2)
+                array.push(split[index - 1] + string);
+            return array;
+        }, []);
+    if (pairs.length < 4)
+        pairs.push("ff");
+    return pairs;
 };
 var addPropertyKeyframes = function (property, values) {
     var animatable = sanitize(values);

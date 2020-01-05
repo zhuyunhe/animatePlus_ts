@@ -9,7 +9,9 @@ npm i animateplus_ts -S
 ```  
 
 ## use  
-
+```
+import animate from 'animateplus_ts';
+```
 * 改变一个dom元素的css属性，比如改变一个绝对定位的小球的`left`属性，让它水平向右移动一百个像素。  
 ```
 await animate({
@@ -19,12 +21,29 @@ await animate({
   'left': ['0px', '100px']
 })
 ```
-![demo1_gif.gif](https://i.loli.net/2020/01/04/jPvAMFqKzb2ge1D.gif)
+![demo1_gif.gif](https://i.loli.net/2020/01/04/jPvAMFqKzb2ge1D.gif)   
+* 改变一个svg元素的属性  
+```
+const svgPlay = async () => {
+  await animate({
+    elements: '.path3',
+    duration: 3000,
+    optimize: true,
+    'stroke-dasharray': [`0 ${ARC_LENGTH}`, `${ARC_LENGTH} ${ARC_LENGTH}`],
+    'stroke': ["#00f76e", "#ff6633"],
+    change: progress =>
+      progressEle.textContent = `${Math.round(progress * 100)}%`
+  }) 
+}
+```
+![demo5_gif.gif](https://i.loli.net/2020/01/05/DqMY6jRpWwkJyo7.gif)
 
 对于想要做动画的属性，你需要用一个数组来表示动画的开始值和结束值`[start_value, end_value]`，例如上面的例子，我们需要改变`left`属性，在这里我们开始值设为0px，结束值是100px，那这个动画就是在2秒内把目标元素移动到距初始位置100px的地方。  
 *为了方便使用，你可以忽略掉end_value参数里的除了数字外其他内容。这在某些属性值比较复杂时，提供一些便利。*  
 `'left': ['0px', '100px']`的效果和`'left': ['0px', '100']`是一样的。  
-`transform: ["rotate(0turn)", 1']`和`transform: ["rotate(0turn)", 'rotate(1turn)']`也是一样的效果。
+`transform: ["rotate(0turn)", 1']`和`transform: ["rotate(0turn)", 'rotate(1turn)']`也是一样的效果。   
+
+- svg
 
 ## configs  
 ### elements  
@@ -165,6 +184,7 @@ const play = async ()=>{
 提供一个定时触发器的功能，你可以理解成`setTimeout`函数，但因为是基于rAf的，所以更加精确。`delay(500)`表示延时500ms执行，返回一个promise对象。  
 下面这个例子我们让小方块先平移，然后延时1000ms后在转圈。  
 ```
+import { delay } from 'animateplus_ts';
 const play = async ()=>{
 // 左移100px
 const options = await animate({

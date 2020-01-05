@@ -78,11 +78,11 @@ var rAF = {
             requestAnimationFrame(tick);
     }
 };
-var trackTime = function (timing, now) {
-    if (!timing.startTime) {
-        timing.startTime = now;
+var trackTime = function (object, now) {
+    if (!object.startTime) {
+        object.startTime = now;
     }
-    timing.elapsed = now - timing.startTime;
+    object.elapsed = now - object.startTime;
 };
 var getProgress = function (_a) {
     var elapsed = _a.elapsed, duration = _a.duration;
@@ -122,50 +122,6 @@ var createStyles = function (keyframes, easing) {
         style[property] = recomposeValue(numbers, strings, round, easing);
         return style;
     }, {});
-};
-var tick = function (now) {
-    var all = rAF.all;
-    all.forEach(function (object) {
-        trackTime(object, now);
-        var progress = getProgress(object);
-        var element = object.element, keyframes = object.keyframes, loop = object.loop, optimize = object.optimize, direction = object.direction, change = object.change, easing = object.easing, duration = object.duration, gaussian = object.gaussian, end = object.end, options = object.options;
-        if (direction) {
-            var curve = progress;
-            console.log("progress: " + progress);
-            switch (progress) {
-                case 0:
-                    if (direction === 'alternate') {
-                        reverseKeyframes(keyframes);
-                    }
-                    break;
-                // progress为1，动画结束
-                case 1:
-                    if (loop) {
-                        resetTime(object);
-                    }
-                    else {
-                        all["delete"](object);
-                    }
-                    if (end && typeof end === 'function') {
-                        end(options);
-                    }
-                    break;
-                default:
-                    curve = ease(easing, progress);
-            }
-            if (element) {
-                console.log(createStyles(keyframes, curve));
-                Object.assign(element.style, createStyles(keyframes, curve));
-            }
-            return;
-        }
-        if (progress < 1)
-            return;
-        all["delete"](object);
-        end(duration);
-    });
-    if (all.size)
-        requestAnimationFrame(tick);
 };
 var computeValue = function (value, index) {
     return typeof value === 'function' ? value(index) : value;
@@ -215,7 +171,6 @@ var addAnimations = function (options, resolve) {
             switch (_a.label) {
                 case 0:
                     keyframes = createAnimationKeyframes(rest, index);
-                    console.log(keyframes);
                     animation = {
                         elements: elements,
                         element: element,
@@ -227,6 +182,7 @@ var addAnimations = function (options, resolve) {
                         easing: decomposeEasing(easing),
                         duration: setSpeed(speed, duration, index),
                         end: '',
+                        blur: null,
                         gaussian: 0,
                         options: options,
                         elapsed: 0,
@@ -239,8 +195,15 @@ var addAnimations = function (options, resolve) {
                         reverseKeyframes(keyframes);
                     }
                     //利用willchange属性优化
-                    if (element && optimize) {
-                        accelerate(element.style, keyframes);
+                    if (element) {
+                        if (optimize) {
+                            accelerate(element.style, keyframes);
+                        }
+                        //高斯模糊，这块先不做
+                        if (blur) {
+                            animation.blur = computeValue(blur, index);
+                            animation.gaussian = {};
+                        }
                     }
                     if (totalDuration > last.totalDuration) {
                         last.animation = animation;
@@ -250,6 +213,7 @@ var addAnimations = function (options, resolve) {
                     return [4 /*yield*/, delay(animationTimeout)];
                 case 1:
                     _a.sent();
+                    console.log('delay 结束');
                     _a.label = 2;
                 case 2:
                     rAF.add(animation);
@@ -261,13 +225,64 @@ var addAnimations = function (options, resolve) {
     if (!animation)
         return;
     animation.end = resolve;
+    animation.options = options;
+};
+var tick = function (now) {
+    var all = rAF.all;
+    // console.log(`size: ${all.size}`)
+    all.forEach(function (object) {
+        trackTime(object, now);
+        var progress = getProgress(object);
+        var element = object.element, keyframes = object.keyframes, loop = object.loop, optimize = object.optimize, direction = object.direction, change = object.change, easing = object.easing, duration = object.duration, gaussian = object.gaussian, end = object.end, options = object.options;
+        if (direction) {
+            var curve = progress;
+            switch (progress) {
+                case 0:
+                    if (direction === 'alternate') {
+                        reverseKeyframes(keyframes);
+                    }
+                    break;
+                // progress为1，动画结束
+                case 1:
+                    if (loop) {
+                        resetTime(object);
+                    }
+                    else {
+                        if (optimize)
+                            accelerate(element.style, null);
+                        all["delete"](object);
+                    }
+                    if (end && typeof end === 'function') {
+                        end(options);
+                    }
+                    break;
+                default:
+                    curve = ease(easing, progress);
+            }
+            if (element) {
+                Object.assign(element.style, createStyles(keyframes, curve));
+            }
+            if (change)
+                change(curve);
+            return;
+        }
+        if (progress < 1)
+            return;
+        all["delete"](object);
+        end(duration);
+    });
+    if (all.size)
+        requestAnimationFrame(tick);
 };
 export default (function (options) {
     return new Promise(function (resolve) { return addAnimations(options, resolve); });
 });
 export var delay = function (duration) {
-    new Promise(function (resolve) { return rAF.add({
-        duration: duration,
-        end: resolve
-    }); });
+    return new Promise(function (resolve) {
+        console.log('delay promise, duration: ' + duration);
+        rAF.add({
+            duration: duration,
+            end: resolve
+        });
+    });
 };

@@ -14,7 +14,8 @@ interface AnimateObject {
   end,
   options,
   elapsed: number,
-  startTime: number
+  startTime: number,
+  blur: object|null
 }
 
 // 获取数组的第一个元素
@@ -23,7 +24,8 @@ const first = ([item]: string[]) => item;
 const easings = {
   "linear": progress => progress,
   "in-cubic": progress => progress ** 3,
-  "in-quartic": progress => progress ** 4
+  "in-quartic": progress => progress ** 4,
+  "in-quintic": progress => progress ** 5
 }
 
 const getElements = (elements: any) => {
@@ -49,11 +51,11 @@ const rAF = {
   }
 }
 
-const trackTime = (timing, now: number) => {
-  if(!timing.startTime){
-    timing.startTime = now
+const trackTime = (object, now: number) => {
+  if (!object.startTime){
+    object.startTime = now
   }
-  timing.elapsed = now - timing.startTime
+  object.elapsed = now - object.startTime
 }
 
 const getProgress = ({ elapsed, duration }: AnimateObject) => {
@@ -95,64 +97,7 @@ const createStyles = (keyframes, easing) => {
   }, {})
 }
 
-const tick = (now:number) => {
-  const {all} = rAF;
-  all.forEach((object: AnimateObject) => {
-    trackTime(object, now);
-    const progress = getProgress(object);
-    const {
-      element,
-      keyframes,
-      loop,
-      optimize,
-      direction,
-      change,
-      easing,
-      duration,
-      gaussian,
-      end,
-      options
-    } = object
 
-    if(direction){
-      let curve = progress
-      console.log(`progress: ${progress}`)
-      switch(progress){
-        case 0:
-          if(direction === 'alternate'){
-            reverseKeyframes(keyframes)
-          }
-        break;
-        // progress为1，动画结束
-        case 1: 
-          if(loop) {
-            resetTime(object)
-          } else {
-            if(optimize) accelerate(element.style, null)
-            all.delete(object)
-          }
-          if(end && typeof end === 'function'){
-            end(options)
-          }
-          break;
-        default: 
-          curve = ease(easing, progress)
-      }
-      if(element){
-        console.log(createStyles(keyframes, curve))
-        Object.assign(element.style, createStyles(keyframes, curve))
-      }
-
-      return
-    }
-
-    if(progress < 1) return
-    all.delete(object)
-    end(duration)
-  });
-
-  if(all.size) requestAnimationFrame(tick);
-}
 
 const computeValue = (value: Function|string, index) => {
   return typeof value === 'function' ? value(index) : value;
@@ -220,7 +165,6 @@ const addAnimations = (options, resolve) => {
 
   getElements(elements).forEach(async (element, index) => {
     const keyframes = createAnimationKeyframes(rest, index);
-    console.log(keyframes)
     const animation: AnimateObject = {
       elements,      
       element,
@@ -232,12 +176,12 @@ const addAnimations = (options, resolve) => {
       easing: decomposeEasing(easing),
       duration: setSpeed(speed, duration, index),
       end: '',
+      blur: null,
       gaussian: 0,
       options,
       elapsed: 0,
       startTime: 0
     };
-
     const animationTimeout = setSpeed(speed, timeout, index);
   
     const totalDuration = animationTimeout + animation.duration;
@@ -248,8 +192,17 @@ const addAnimations = (options, resolve) => {
     }
    
     //利用willchange属性优化
-    if (element && optimize){
-      accelerate(element.style, keyframes)
+    if (element){
+      if (optimize){
+        accelerate(element.style, keyframes)
+      }
+
+      //高斯模糊，这块先不做
+      if (blur){
+        animation.blur = computeValue(blur, index)
+        animation.gaussian = {}
+      }
+
     }
 
     if(totalDuration > last.totalDuration){
@@ -257,24 +210,96 @@ const addAnimations = (options, resolve) => {
       last.totalDuration = totalDuration;
     }
 
-    if (animationTimeout) await delay(animationTimeout)
-
+    // console.log(delay(animationTimeout))
+    /* if (animationTimeout) {
+      console.log(delay(animationTimeout))
+    } */
+    if (animationTimeout){
+      await delay(animationTimeout)
+      console.log('delay 结束')
+    } 
     rAF.add(animation)
-
   });
+
+
 
   const { animation } = last;
   if(!animation) return
   animation.end = resolve;
+  animation.options = options;
 }
 
-export default options => 
+const tick = (now: number) => {
+  const { all } = rAF;
+  // console.log(`size: ${all.size}`)
+  all.forEach((object: AnimateObject) => {
+    trackTime(object, now);
+    const progress = getProgress(object);
+    const {
+      element,
+      keyframes,
+      loop,
+      optimize,
+      direction,
+      change,
+      easing,
+      duration,
+      gaussian,
+      end,
+      options
+    } = object
+
+    if (direction) {
+      let curve = progress
+      switch (progress) {
+        case 0:
+          if (direction === 'alternate') {
+            reverseKeyframes(keyframes)
+          }
+          break;
+        // progress为1，动画结束
+        case 1:
+          if (loop) {
+            resetTime(object)
+          } else {
+            if (optimize) accelerate(element.style, null)
+            all.delete(object)
+          }
+          if (end && typeof end === 'function') {
+            end(options)
+          }
+          break;
+        default:
+          curve = ease(easing, progress)
+      }
+      if (element) {
+        Object.assign(element.style, createStyles(keyframes, curve))
+      }
+
+      if (change) change(curve);
+
+      return
+    }
+    
+    if (progress < 1) return
+
+    all.delete(object)
+    end(duration)
+  });
+
+  if (all.size) requestAnimationFrame(tick);
+}
+
+export default (options: AnimateObject) => 
   new Promise(resolve => addAnimations(options, resolve))
 
 export const delay = (duration: number) => {
-  new Promise(resolve => rAF.add({
-    duration,
-    end: resolve
-  }))
+  return new Promise(resolve => {
+    console.log('delay promise, duration: ' + duration)
+    rAF.add({
+      duration,
+      end: resolve
+    })
+  })
 }
 

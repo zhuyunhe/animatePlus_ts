@@ -18,3 +18,4 @@ interface AnimateObject {
 declare const _default: (options: AnimateObject) => Promise<unknown>;
 export default _default;
 export declare const delay: (duration: number) => Promise<unknown>;
+export declare const stop: (elements: any) => any[];

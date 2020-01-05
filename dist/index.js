@@ -309,3 +309,12 @@ export var delay = function (duration) {
         });
     });
 };
+export var stop = function (elements) {
+    var all = rAF.all;
+    var nodes = getElements(elements);
+    all.forEach(function (object) {
+        if (nodes.includes(object.element))
+            all["delete"](object);
+    });
+    return nodes;
+};

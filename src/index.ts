@@ -326,3 +326,12 @@ export const delay = (duration: number) => {
   })
 }
 
+export const stop  = (elements) => {
+  const { all } = rAF;
+  const nodes = getElements(elements);
+  all.forEach(object => {
+    if (nodes.includes(object.element)) all.delete(object);
+  });
+  return nodes;
+}
+

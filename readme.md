@@ -212,7 +212,15 @@ await animate({
 });
 }
 ```
-![demo4_gif.gif](https://i.loli.net/2020/01/05/RGeMhUlkJSAD9TZ.gif)  
+![demo4_gif.gif](https://i.loli.net/2020/01/05/RGeMhUlkJSAD9TZ.gif)    
+
+### stop
+停止某些正在做动画的元素。  
+```
+import { stop } from 'animateplus_ts';
+stop('.ball);
+```
+![demo6_gif.gif](https://i.loli.net/2020/01/05/q31YoGuQUBcHsPN.gif)
 
 ## todo
 - 丰富eases函数，了解其背后公式。

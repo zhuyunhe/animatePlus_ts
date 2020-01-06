@@ -23,9 +23,15 @@ const first = ([item]: string[]) => item;
 
 const easings = {
   "linear": progress => progress,
+  // 加速
   "in-cubic": progress => progress ** 3,
-  "in-quartic": progress => progress ** 4,
-  "in-quintic": progress => progress ** 5
+  // 减速
+  "out-cubic": progress => --progress ** 3 +1,
+  // 先加速后减速
+  "in-out-cubic": progress =>
+    (progress *= 2) < 1
+      ? .5 * progress ** 3
+      : .5 * ((progress -= 2) * progress ** 2 + 2)
 }
 
 const getElements = (elements: any) => {

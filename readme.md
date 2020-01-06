@@ -43,8 +43,6 @@ const svgPlay = async () => {
 `'left': ['0px', '100px']`的效果和`'left': ['0px', '100']`是一样的。  
 `transform: ["rotate(0turn)", 1']`和`transform: ["rotate(0turn)", 'rotate(1turn)']`也是一样的效果。   
 
-- svg
-
 ## configs  
 ### elements  
 - 类型：Dom elements | css selector | NodeList ，指示做动画的元素。   

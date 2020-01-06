@@ -52,9 +52,16 @@ var first = function (_a) {
 };
 var easings = {
     "linear": function (progress) { return progress; },
+    // 加速
     "in-cubic": function (progress) { return Math.pow(progress, 3); },
-    "in-quartic": function (progress) { return Math.pow(progress, 4); },
-    "in-quintic": function (progress) { return Math.pow(progress, 5); }
+    // 减速
+    "out-cubic": function (progress) { return Math.pow(--progress, 3) + 1; },
+    // 先加速后减速
+    "in-out-cubic": function (progress) {
+        return (progress *= 2) < 1
+            ? .5 * Math.pow(progress, 3)
+            : .5 * ((progress -= 2) * Math.pow(progress, 2) + 2);
+    }
 };
 var getElements = function (elements) {
     if (Array.isArray(elements)) {
